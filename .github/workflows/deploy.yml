@@ -27,6 +27,23 @@ jobs:
       - name: Build Docker image
         run: docker build -t my-react-app .
 
+      - name: Save Docker image as artifact
+        run: docker save my-react-app -o my-react-app.tar
+
+      - name: Upload Docker image artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: docker-image
+          path: my-react-app.tar
+
+      - name: Download Docker image artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: docker-image
+
+      - name: Load Docker image
+        run: docker load -i my-react-app.tar
+
       - name: Tag Docker image
         run: docker tag my-react-app ${{ secrets.SERVER_IP }}/my-react-app:latest
 
@@ -38,7 +55,7 @@ jobs:
           echo "$SSH_PRIVATE_KEY" | tr -d '\r' > ~/ssh_key
           chmod 600 ~/ssh_key
 
-          # Push Docker image to the server
+          # Save Docker image tar file and push to the server
           docker save my-react-app | ssh -i ~/ssh_key -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SERVER_IP }} 'docker load'
 
       - name: Deploy to server
@@ -69,7 +86,7 @@ jobs:
 
             # Load Docker image
             echo "Loading Docker image..."
-            docker load < my-react-app.tar
+            docker load < ~/my-react-app.tar
 
             # Run new Docker container
             echo "Running new Docker container..."
