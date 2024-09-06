@@ -41,6 +41,10 @@ jobs:
     - script: |
         sudo docker save $(dockerImageName) -o $(imageTarFile)
       displayName: 'Save Docker image as artifact'
+      
+    - script: |
+        sudo chmod 644 $(imageTarFile)
+      displayName: 'Set correct permissions on Docker image file'
 
     - task: PublishPipelineArtifact@1
       inputs:
