@@ -63,7 +63,7 @@ jobs:
       displayName: 'Load Docker image'
 
     - script: |
-        docker tag $(dockerImageName) $(SERVER_IP)/$(dockerImageName):latest
+        sudo docker tag $(dockerImageName) $(SERVER_IP)/$(dockerImageName):latest
       displayName: 'Tag Docker image'
 
     - script: |
@@ -86,9 +86,9 @@ jobs:
           if [ "$(docker images -q my-react-app)" ]; then
             docker rmi my-react-app || true
           fi
-          docker load -i $(serverPath)
-          docker run -d --name my-react-container -p 3001:80 my-react-app || { echo "Failed to run container"; exit 1; }
-          docker logs my-react-container
+         sudo docker load -i $(serverPath)
+         sudo docker run -d --name my-react-container -p 3001:80 my-react-app || { echo "Failed to run container"; exit 1; }
+         sudo docker logs my-react-container
         '
       env:
         SSH_PRIVATE_KEY: $(SSH_PRIVATE_KEY)
