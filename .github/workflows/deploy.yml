@@ -56,13 +56,20 @@ jobs:
             echo "Current Docker containers:"
             docker ps -a
             
-            # Load Docker image
-            docker load -i docker-image.tar
+            # Load Docker image if not already present
+            if [ -z "$(docker images -q my-react-app)" ]; then
+              echo "Loading Docker image..."
+              docker load -i docker-image.tar
+            fi
             
             # Stop and remove existing container if it exists
-            docker stop my-react-container || true
-            docker rm my-react-container || true
+            if [ "$(docker ps -q -f name=my-react-container)" ]; then
+              echo "Stopping and removing existing container..."
+              docker stop my-react-container
+              docker rm my-react-container
+            fi
             
             # Run new Docker container
+            echo "Running new Docker container..."
             docker run -d --name my-react-container -p 80:80 my-react-app
           '
