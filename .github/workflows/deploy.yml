@@ -47,19 +47,17 @@ jobs:
       - name: Deploy to server
         env:
           SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+          SERVER_IP: ${{ secrets.SERVER_IP }}
         run: |
           # Write SSH private key to file
           echo "$SSH_PRIVATE_KEY" | tr -d '\r' > ~/ssh_key
           chmod 600 ~/ssh_key
 
           # SSH to server and deploy
-          ssh -i ~/ssh_key -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SERVER_IP }} '
+          ssh -i ~/ssh_key -o StrictHostKeyChecking=no $SSH_USER@$SERVER_IP '
             # Ensure Docker is running
             sudo systemctl start docker || true
-
-            # Verify Docker image
-            echo "Docker images:"
-            docker images
 
             # Stop and remove existing container if it exists
             if [ "$(docker ps -q -f name=my-react-container)" ]; then
@@ -70,7 +68,7 @@ jobs:
 
             # Run new Docker container
             echo "Running new Docker container..."
-            docker run -d --name my-react-container -p 3001:80 my-react-app || { echo "Failed to run container"; exit 1; }
+            docker run -d --name my-react-container -p 80:3000 my-react-app || { echo "Failed to run container"; exit 1; }
 
             # Check container logs
             echo "Container logs:"
