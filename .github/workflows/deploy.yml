@@ -59,6 +59,9 @@ jobs:
             # Ensure Docker is running
             sudo systemctl start docker || true
 
+            # Remove old Docker images
+            docker rmi $(docker images -q --filter "dangling=true") || true
+
             # Stop and remove existing container if it exists
             if [ "$(docker ps -q -f name=my-react-container)" ]; then
               echo "Stopping and removing existing container..."
