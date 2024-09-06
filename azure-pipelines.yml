@@ -59,7 +59,7 @@ jobs:
       displayName: 'Download Docker image artifact'
 
     - script: |
-        docker load -i $(Pipeline.Workspace)/$(imageTarFile)
+        sudo docker load -i $(Pipeline.Workspace)/$(imageTarFile)
       displayName: 'Load Docker image'
 
     - script: |
