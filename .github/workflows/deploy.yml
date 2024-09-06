@@ -29,6 +29,8 @@ jobs:
 
       - name: Save Docker image as artifact
         run: docker save my-react-app -o docker-image.tar
+
+      - name: Upload Docker image artifact
         uses: actions/upload-artifact@v3
         with:
           name: docker-image
@@ -37,15 +39,13 @@ jobs:
       - name: Install sshpass
         run: sudo apt-get install -y sshpass
 
-      - name: Upload Docker image artifact
-        uses: actions/upload-artifact@v3
-        with:
-          name: docker-image
-          path: docker-image.tar
-
       - name: Deploy to server
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
         run: |
-          sshpass -p ${{ secrets.SSH_PASSWORD }} ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SERVER_IP }} '
+          echo "$SSH_PRIVATE_KEY" | tr -d '\r' > ~/ssh_key
+          chmod 600 ~/ssh_key
+          ssh -i ~/ssh_key -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SERVER_IP }} '
             curl -L -o docker-image.tar "https://github.com/${{ github.repository }}/releases/download/latest/docker-image.tar"
             docker load -i docker-image.tar
             docker stop my-react-container || true
