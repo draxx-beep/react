@@ -6,58 +6,73 @@ on:
       - main
 
 jobs:
-  build:
+  build-and-deploy:
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build React app
+        run: npm run build
 
       - name: Build Docker image
-        run: |
-          docker build --no-cache -t my-react-app .
+        run: docker build -t my-react-app .
 
-      - name: Log in to Docker Hub
-        uses: docker/login-action@v2
+      - name: Save Docker image as artifact
+        run: docker save my-react-app -o docker-image.tar
+
+      - name: Upload Docker image artifact
+        uses: actions/upload-artifact@v3
         with:
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
+          name: docker-image
+          path: /home/azuser/docker-image.tar
 
-      - name: Push Docker image to Docker Hub
+      - name: Download Docker image artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: docker-image
+
+      - name: Load Docker image
+        run: docker load -i docker-image.tar
+
+      - name: Deploy to server
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
         run: |
-          docker tag my-react-app my-dockerhub-username/my-react-app:latest
-          docker push my-dockerhub-username/my-react-app:latest
+          # Write SSH private key to file
+          echo "$SSH_PRIVATE_KEY" | tr -d '\r' > ~/ssh_key
+          chmod 600 ~/ssh_key
 
-  deploy:
-    needs: build
-    runs-on: ubuntu-latest
+          # SSH to server and deploy
+          ssh -i ~/ssh_key -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SERVER_IP }} '
+            # Ensure Docker is running
+            sudo systemctl start docker || true
 
-    steps:
-      - name: Check if container is running
-        run: |
-          if [ "$(docker ps -q -f name=my-react-container)" ]; then
-            echo "Container is running."
-          else
-            echo "Container is not running."
-          fi
+            # Verify Docker image
+            echo "Docker images:"
+            docker images
 
-      - name: Stop and remove old container
-        run: |
-          docker stop my-react-container || true
-          docker rm my-react-container || true
+            # Stop and remove existing container if it exists
+            if [ "$(docker ps -q -f name=my-react-container)" ]; then
+              echo "Stopping and removing existing container..."
+              docker stop my-react-container
+              docker rm my-react-container
+            fi
 
-      - name: Run new Docker container
-        run: |
-          docker run -d --name my-react-container -p 3001:3001 my-react-app
+            # Run new Docker container
+            echo "Running new Docker container..."
+            docker run -d --name my-react-container -p 80:80 my-react-app || { echo "Failed to run container"; exit 1; }
 
-      - name: Verify container logs
-        run: |
-          docker logs my-react-container
-
-      - name: Check if the application is accessible
-        run: |
-          curl -s -o /dev/null -w "%{http_code}" http://localhost:3001 | grep 200 || exit 1
-
+            # Check container logs
+            echo "Container logs:"
+            docker logs my-react-container
+          '
