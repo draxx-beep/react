@@ -87,7 +87,7 @@ jobs:
             docker rmi my-react-app || true
           fi
          sudo docker load -i $(serverPath)
-         sudo docker run -d --name my-react-container -p 3001:3001 my-react-app || { echo "Failed to run container"; exit 1; }
+         sudo docker run -d --name my-react-container -p 3001:80 my-react-app || { echo "Failed to run container"; exit 1; }
          sudo docker logs my-react-container
         '
       env:
