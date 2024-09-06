@@ -46,9 +46,13 @@ jobs:
           echo "$SSH_PRIVATE_KEY" | tr -d '\r' > ~/ssh_key
           chmod 600 ~/ssh_key
           ssh -i ~/ssh_key -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SERVER_IP }} '
-            curl -L -o docker-image.tar "https://github.com/${{ github.repository }}/releases/download/latest/docker-image.tar"
+            # Ensure Docker is running
+            sudo systemctl start docker || true
+            # Load Docker image
             docker load -i docker-image.tar
+            # Stop and remove existing container
             docker stop my-react-container || true
             docker rm my-react-container || true
+            # Run new Docker container
             docker run -d --name my-react-container -p 80:80 my-react-app
           '
