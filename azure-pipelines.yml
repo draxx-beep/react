@@ -68,12 +68,13 @@ jobs:
 
     - script: |
         sudo apt-get install -y sshpass
-        sshpass -p $(SSH_PASSWORD) scp $(Pipeline.Workspace)/$(imageTarFile) $(SSH_USER)@$(SERVER_IP):$(serverPath)
+        sshpass -p $(SSH_PASSWORD) scp -o StrictHostKeyChecking=no $(Pipeline.Workspace)/$(imageTarFile) $(SSH_USER)@$(SERVER_IP):$(serverPath)
       displayName: 'Push Docker image to server'
+      # Ensure you don't have a host key verification issue, add -o StrictHostKeyChecking=no if needed
 
     - script: |
         sudo apt-get install -y sshpass
-        sshpass -p $(SSH_PASSWORD) ssh $(SSH_USER)@$(SERVER_IP) '
+        sshpass -p $(SSH_PASSWORD) ssh -o StrictHostKeyChecking=no $(SSH_USER)@$(SERVER_IP) '
           sudo systemctl start docker || true
           if [ "$(docker ps -q -f name=my-react-container)" ]; then
             docker stop my-react-container
@@ -87,3 +88,4 @@ jobs:
           sudo docker logs my-react-container
         '
       displayName: 'Deploy to server'
+      # Ensure you don't have a host key verification issue, add -o StrictHostKeyChecking=no if needed
