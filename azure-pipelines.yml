@@ -11,10 +11,11 @@ variables:
   sshKey: '$(sshKey)'  # SSH private key as a pipeline variable or Azure DevOps secret
   dockerfilePath: 'Dockerfile'
 
+pool:
+  name: 'Default'  # Specify the named pool
+
 jobs:
 - job: Deploy
-  pool:
-    vmImage: 'ubuntu-latest'  # Use an Azure-hosted agent with SSH capabilities
   steps:
   - task: Checkout@1
     inputs:
