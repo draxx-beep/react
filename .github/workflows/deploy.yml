@@ -1,4 +1,4 @@
-name: Deploy React App
+name: Build and Deploy React App
 
 on:
   push:
@@ -64,14 +64,13 @@ jobs:
               docker rm my-react-container
             fi
 
-            # Remove old Docker image if it exists
+            # Remove old Docker image if needed
             if [ "$(docker images -q my-react-app)" ]; then
               echo "Removing old Docker image..."
               docker rmi my-react-app || true
             fi
 
             # Load Docker image
-            echo "Loading Docker image..."
             docker load -i docker-image.tar
 
             # Run new Docker container
