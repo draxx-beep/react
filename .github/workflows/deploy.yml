@@ -58,7 +58,7 @@ jobs:
 
             # Load Docker image
             echo "Loading Docker image..."
-            docker load -i docker-image.tar
+            docker load -i /home/azuser/docker-image.tar
 
             # Stop and remove existing container if it exists
             if [ "$(docker ps -q -f name=my-react-container)" ]; then
