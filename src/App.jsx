@@ -5,7 +5,7 @@ function App() {
 
   return (
     <>
-      <h1>Hello  World!! Azure!!!!</h1>
+      <h1>Hello  Azure!!!!</h1>
     </>
   )
 }
