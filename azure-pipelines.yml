@@ -15,7 +15,6 @@ variables:
   SSH_USER: 'azuser'  # Replace with your SSH username
   SSH_PASSWORD: $(SSH_PASSWORD)  # Define the SSH password variable
 
-
 jobs:
 - job: BuildAndDeploy
   steps:
@@ -71,12 +70,10 @@ jobs:
         sudo apt-get install -y sshpass
         sshpass -p $(SSH_PASSWORD) scp $(Pipeline.Workspace)/$(imageTarFile) $(SSH_USER)@$(SERVER_IP):$(serverPath)
       displayName: 'Push Docker image to server'
-      env:
-        SSH_PASSWORD: $(SSH_PASSWORD)
 
     - script: |
         sudo apt-get install -y sshpass
-        echo $(SSH_PASSWORD) | sshpass -e ssh $(SSH_USER)@$(SERVER_IP) '
+        sshpass -p $(SSH_PASSWORD) ssh $(SSH_USER)@$(SERVER_IP) '
           sudo systemctl start docker || true
           if [ "$(docker ps -q -f name=my-react-container)" ]; then
             docker stop my-react-container
@@ -90,5 +87,3 @@ jobs:
           sudo docker logs my-react-container
         '
       displayName: 'Deploy to server'
-      env:
-        SSH_PASSWORD: $(SSH_PASSWORD)
