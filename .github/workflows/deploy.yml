@@ -3,7 +3,7 @@ name: Deploy React App
 on:
   push:
     branches:
-      - main  # or the branch you want to trigger the pipeline
+      - main
 
 jobs:
   build-and-deploy:
@@ -49,26 +49,16 @@ jobs:
             # Ensure Docker is running
             sudo systemctl start docker || true
 
-            # Verify Docker image and container
+            # Check Docker image and container status
             echo "Current Docker images:"
             docker images
 
             echo "Current Docker containers:"
             docker ps -a
 
-            # Check if artifact exists
-            if [ -f docker-image.tar ]; then
-              echo "Docker image artifact found."
-            else
-              echo "Docker image artifact not found."
-              exit 1
-            fi
-
-            # Load Docker image if not already present
-            if [ -z "$(docker images -q my-react-app)" ]; then
-              echo "Loading Docker image..."
-              docker load -i docker-image.tar
-            fi
+            # Load Docker image
+            echo "Loading Docker image..."
+            docker load -i docker-image.tar
 
             # Stop and remove existing container if it exists
             if [ "$(docker ps -q -f name=my-react-container)" ]; then
