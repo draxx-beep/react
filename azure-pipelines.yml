@@ -1,7 +1,7 @@
 trigger:
   branches:
     include:
-      - main  # or the branch you want to monitor
+      - main  # Specify the branch you want to monitor for changes
 
 variables:
   imageName: 'your-app'
