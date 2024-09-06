@@ -1,0 +1,48 @@
+name: Deploy React App
+
+on:
+  push:
+    branches:
+      - main # or the branch you want to trigger the pipeline
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build React app
+        run: npm run build
+
+      - name: Build Docker image
+        run: docker build -t my-react-app .
+
+      - name: Save Docker image as artifact
+        run: docker save my-react-app -o docker-image.tar
+        uses: actions/upload-artifact@v3
+        with:
+          name: docker-image
+          path: docker-image.tar
+
+      - name: Deploy to server
+        uses: appleboy/ssh-action@v0.1.3
+        with:
+          host: ${{ secrets.SERVER_IP }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            curl -L -o docker-image.tar "https://github.com/<your-org>/<your-repo>/releases/download/latest/docker-image.tar"
+            docker load -i docker-image.tar
+            docker stop my-react-container || true
+            docker rm my-react-container || true
+            docker run -d --name my-react-container -p 80:80 my-react-app
