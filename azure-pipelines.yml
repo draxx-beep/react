@@ -10,10 +10,10 @@ variables:
   dockerImageName: 'my-react-app'
   dockerFilePath: 'Dockerfile'
   imageTarFile: 'my-react-app.tar'
-  sshKeyFile: 'ssh_key'
   serverPath: '/home/azuser/docker-image.tar'
   SERVER_IP: '20.151.74.48'  # Replace with your server IP
   SSH_USER: 'azuser'  # Replace with your SSH username
+  SSH_PASSWORD: '$(SSH_PASSWORD)'  # Replace with your SSH password
 
 jobs:
 - job: BuildAndDeploy
@@ -67,17 +67,13 @@ jobs:
       displayName: 'Tag Docker image'
 
     - script: |
-        echo "$(SSH_PRIVATE_KEY)" > $(sshKeyFile)
-        chmod 600 $(sshKeyFile)
-        scp -i $(sshKeyFile) $(Pipeline.Workspace)/$(imageTarFile) $(SSH_USER)@$(SERVER_IP):$(serverPath)
-      env:
-        SSH_PRIVATE_KEY: $(SSH_PRIVATE_KEY)
+        sudo apt-get install -y sshpass
+        sshpass -p $(SSH_PASSWORD) scp $(Pipeline.Workspace)/$(imageTarFile) $(SSH_USER)@$(SERVER_IP):$(serverPath)
       displayName: 'Push Docker image to server'
 
     - script: |
-        echo "$(SSH_PRIVATE_KEY)" > $(sshKeyFile)
-        chmod 600 $(sshKeyFile)
-        ssh -i $(sshKeyFile) $(SSH_USER)@$(SERVER_IP) '
+        sudo apt-get install -y sshpass
+        sshpass -p $(SSH_PASSWORD) ssh $(SSH_USER)@$(SERVER_IP) '
           sudo systemctl start docker || true
           if [ "$(docker ps -q -f name=my-react-container)" ]; then
             docker stop my-react-container
@@ -86,10 +82,8 @@ jobs:
           if [ "$(docker images -q my-react-app)" ]; then
             docker rmi my-react-app || true
           fi
-         sudo docker load -i $(serverPath)
-         sudo docker run -d --name my-react-container -p 3001:80 my-react-app || { echo "Failed to run container"; exit 1; }
-         sudo docker logs my-react-container
+          sudo docker load -i $(serverPath)
+          sudo docker run -d --name my-react-container -p 3001:80 my-react-app || { echo "Failed to run container"; exit 1; }
+          sudo docker logs my-react-container
         '
-      env:
-        SSH_PRIVATE_KEY: $(SSH_PRIVATE_KEY)
       displayName: 'Deploy to server'
