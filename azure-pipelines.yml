@@ -69,7 +69,7 @@ jobs:
 
     - script: |
         sudo apt-get install -y sshpass
-        echo $(SSH_PASSWORD) | sshpass -e scp $(Pipeline.Workspace)/$(imageTarFile) $(SSH_USER)@$(SERVER_IP):$(serverPath)
+        sshpass -p $(SSH_PASSWORD) scp $(Pipeline.Workspace)/$(imageTarFile) $(SSH_USER)@$(SERVER_IP):$(serverPath)
       displayName: 'Push Docker image to server'
       env:
         SSH_PASSWORD: $(SSH_PASSWORD)
