@@ -34,15 +34,21 @@ jobs:
           name: docker-image
           path: docker-image.tar
 
-      - name: Deploy to server
-        uses: appleboy/ssh-action@v0.1.3
+      - name: Install sshpass
+        run: sudo apt-get install -y sshpass
+
+      - name: Upload Docker image artifact
+        uses: actions/upload-artifact@v3
         with:
-          host: ${{ secrets.SERVER_IP }}
-          username: ${{ secrets.SSH_USER }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          script: |
-            curl -L -o docker-image.tar "https://github.com/<your-org>/<your-repo>/releases/download/latest/docker-image.tar"
+          name: docker-image
+          path: docker-image.tar
+
+      - name: Deploy to server
+        run: |
+          sshpass -p ${{ secrets.SSH_PASSWORD }} ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SERVER_IP }} '
+            curl -L -o docker-image.tar "https://github.com/${{ github.repository }}/releases/download/latest/docker-image.tar"
             docker load -i docker-image.tar
             docker stop my-react-container || true
             docker rm my-react-container || true
             docker run -d --name my-react-container -p 80:80 my-react-app
+          '
