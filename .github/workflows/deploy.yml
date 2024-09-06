@@ -69,5 +69,5 @@ jobs:
 
             # Run new Docker container
             echo "Running new Docker container..."
-            docker run -d --name my-react-container -p 3001:3001 my-react-app
+            docker run -d --name my-react-container -p 3001:80 my-react-app
           '
