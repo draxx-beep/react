@@ -1,24 +1,32 @@
-# Use an official Node.js runtime as a parent image
-FROM node:18-alpine
+# Step 1: Use the official Node.js image to build the React app
+FROM node:16 AS build
 
-# Set the working directory
+# Set working directory
 WORKDIR /app
 
-# Copy the package.json and package-lock.json files
-COPY package*.json ./
+# Copy package.json and package-lock.json
+COPY package.json package-lock.json ./
 
 # Install dependencies
 RUN npm install
 
-# Copy the rest of the application code
+# Copy all the files of your React app
 COPY . .
 
 # Build the React app
 RUN npm run build
 
-# Serve the React app using a simple static server
-RUN npm install -g serve
-CMD ["serve", "-s", "build"]
+# Step 2: Use Nginx to serve the built React app
+FROM nginx:stable-alpine
 
-# Expose the port the app runs on
-EXPOSE 3001
+# Copy the built files from the previous stage to the Nginx html folder
+COPY --from=build /app/dist /usr/share/nginx/html
+
+# Copy a custom Nginx configuration file if needed
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+
+# Expose port 80
+EXPOSE 80
+
+# Start Nginx
+CMD ["nginx", "-g", "daemon off;"]
