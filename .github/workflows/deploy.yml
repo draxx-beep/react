@@ -42,7 +42,7 @@ jobs:
           name: docker-image
 
       - name: Load Docker image
-        run: docker load -i /home/azuser/docker-image.tar
+        run: docker load -i docker-image.tar
 
       - name: Deploy to server
         env:
@@ -71,7 +71,7 @@ jobs:
             fi
 
             # Load Docker image
-            docker load -i docker-image.tar
+            docker load -i /home/azuser/docker-image.tar
 
             # Run new Docker container
             echo "Running new Docker container..."
