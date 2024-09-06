@@ -13,7 +13,6 @@ variables:
   serverPath: '/home/azuser/docker-image.tar'
   SERVER_IP: '20.151.74.48'  # Replace with your server IP
   SSH_USER: 'azuser'  # Replace with your SSH username
-  SSH_PASSWORD: '$(SSH_PASSWORD)'  # Replace with your SSH password
 
 jobs:
 - job: BuildAndDeploy
@@ -68,12 +67,14 @@ jobs:
 
     - script: |
         sudo apt-get install -y sshpass
-        sshpass -p $(SSH_PASSWORD) scp $(Pipeline.Workspace)/$(imageTarFile) $(SSH_USER)@$(SERVER_IP):$(serverPath)
+        echo $(SSH_PASSWORD) | sshpass -e scp $(Pipeline.Workspace)/$(imageTarFile) $(SSH_USER)@$(SERVER_IP):$(serverPath)
       displayName: 'Push Docker image to server'
+      env:
+        SSH_PASSWORD: $(SSH_PASSWORD)
 
     - script: |
         sudo apt-get install -y sshpass
-        sshpass -p $(SSH_PASSWORD) ssh $(SSH_USER)@$(SERVER_IP) '
+        echo $(SSH_PASSWORD) | sshpass -e ssh $(SSH_USER)@$(SERVER_IP) '
           sudo systemctl start docker || true
           if [ "$(docker ps -q -f name=my-react-container)" ]; then
             docker stop my-react-container
@@ -87,3 +88,5 @@ jobs:
           sudo docker logs my-react-container
         '
       displayName: 'Deploy to server'
+      env:
+        SSH_PASSWORD: $(SSH_PASSWORD)
