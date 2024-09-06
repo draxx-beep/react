@@ -34,7 +34,7 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: docker-image
-          path: /home/azuser/docker-image.tar
+          path: docker-image.tar
 
       - name: Download Docker image artifact
         uses: actions/download-artifact@v3
