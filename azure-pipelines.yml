@@ -5,9 +5,12 @@ trigger:
 
 variables:
   imageName: 'your-react-app'
-  imageTag: 'latest'  # You can use any tag that suits your versioning
+  imageTag: 'latest'
   localServer: '20.151.74.48'
   sshUser: 'azuser'
+
+pool:
+  name: 'Default'  # Specify the named pool
 
 jobs:
 - job: Build
@@ -19,7 +22,7 @@ jobs:
 
   - task: NodeTool@0
     inputs:
-      versionSpec: '16.x'  # Use the version that matches your setup
+      versionSpec: '16.x'
     displayName: 'Install Node.js'
 
   - script: |
