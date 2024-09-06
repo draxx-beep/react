@@ -1,32 +1,89 @@
-# Step 1: Use the official Node.js image to build the React app
-FROM node:16 AS build
+trigger:
+- main
 
-# Set working directory
-WORKDIR /app
+pool:
+  vmImage: 'ubuntu-latest'
 
-# Copy package.json and package-lock.json
-COPY package.json package-lock.json ./
+variables:
+  dockerImageName: 'my-react-app'
+  dockerFilePath: 'Dockerfile'
+  imageTarFile: 'my-react-app.tar'
+  sshKeyFile: 'ssh_key'
+  serverPath: '/path/to/save/docker-image.tar'
 
-# Install dependencies
-RUN npm install
+jobs:
+- job: BuildAndDeploy
+  steps:
 
-# Copy all the files of your React app
-COPY . .
+    - task: Checkout@2
+      inputs:
+        repository: 'self'
+        
+    - task: NodeTool@0
+      inputs:
+        versionSpec: '18'
+      displayName: 'Install Node.js'
 
-# Build the React app
-RUN npm run build
+    - script: |
+        npm install
+      displayName: 'Install dependencies'
 
-# Step 2: Use Nginx to serve the built React app
-FROM nginx:stable-alpine
+    - script: |
+        npm run build
+      displayName: 'Build React app'
 
-# Copy the built files from the previous stage to the Nginx html folder
-COPY --from=build /app/dist /usr/share/nginx/html
+    - script: |
+        docker build -t $(dockerImageName) .
+      displayName: 'Build Docker image'
 
-# Copy a custom Nginx configuration file if needed
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+    - script: |
+        docker save $(dockerImageName) -o $(imageTarFile)
+      displayName: 'Save Docker image as artifact'
 
-# Expose port 80
-EXPOSE 80
+    - task: PublishPipelineArtifact@1
+      inputs:
+        targetPath: $(imageTarFile)
+        artifactName: 'docker-image'
+      displayName: 'Upload Docker image artifact'
 
-# Start Nginx
-CMD ["nginx", "-g", "daemon off;"]
+    - task: DownloadPipelineArtifact@2
+      inputs:
+        artifactName: 'docker-image'
+        downloadPath: '$(Pipeline.Workspace)'
+      displayName: 'Download Docker image artifact'
+
+    - script: |
+        docker load -i $(Pipeline.Workspace)/$(imageTarFile)
+      displayName: 'Load Docker image'
+
+    - script: |
+        docker tag $(dockerImageName) $(SERVER_IP)/$(dockerImageName):latest
+      displayName: 'Tag Docker image'
+
+    - script: |
+        echo "$(SSH_PRIVATE_KEY)" > $(sshKeyFile)
+        chmod 600 $(sshKeyFile)
+        scp -i $(sshKeyFile) $(Pipeline.Workspace)/$(imageTarFile) $(SSH_USER)@$(SERVER_IP):$(serverPath)
+      env:
+        SSH_PRIVATE_KEY: $(SSH_PRIVATE_KEY)
+      displayName: 'Push Docker image to server'
+
+    - script: |
+        echo "$(SSH_PRIVATE_KEY)" > $(sshKeyFile)
+        chmod 600 $(sshKeyFile)
+        ssh -i $(sshKeyFile) $(SSH_USER)@$(SERVER_IP) '
+          sudo systemctl start docker || true
+          if [ "$(docker ps -q -f name=my-react-container)" ]; then
+            docker stop my-react-container
+            docker rm my-react-container
+          fi
+          if [ "$(docker images -q my-react-app)" ]; then
+            docker rmi my-react-app || true
+          fi
+          docker load -i $(serverPath)
+          docker run -d --name my-react-container -p 3001:80 my-react-app || { echo "Failed to run container"; exit 1; }
+          docker logs my-react-container
+        '
+      env:
+        SSH_PRIVATE_KEY: $(SSH_PRIVATE_KEY)
+      displayName: 'Deploy to server'
