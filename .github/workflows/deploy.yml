@@ -71,7 +71,7 @@ jobs:
             fi
 
             # Load Docker image
-            docker load -i /home/azuser/docker-image.tar
+            docker load -i docker-image.tar
 
             # Run new Docker container
             echo "Running new Docker container..."
