@@ -13,6 +13,8 @@ variables:
   serverPath: '/home/azuser/docker-image.tar'
   SERVER_IP: '20.151.74.48'  # Replace with your server IP
   SSH_USER: 'azuser'  # Replace with your SSH username
+  SSH_PASSWORD: $(SSH_PASSWORD)  # Define the SSH password variable
+
 
 jobs:
 - job: BuildAndDeploy
