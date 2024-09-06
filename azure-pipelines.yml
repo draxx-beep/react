@@ -4,59 +4,37 @@ trigger:
       - main  # or the branch you want to monitor
 
 variables:
-  imageName: 'your-react-app'
+  imageName: 'your-app'
   imageTag: 'latest'
-  localServer: '20.151.74.48'
-  sshUser: 'azuser'
-
-pool:
-  name: 'Default'  # Specify the named pool
+  localServer: '20.151.74.48'  # Replace with your local server IP
+  sshUser: 'azuser'  # Replace with your SSH username
+  sshKey: '$(sshKey)'  # SSH private key as a pipeline variable or Azure DevOps secret
+  dockerfilePath: 'Dockerfile'
 
 jobs:
-- job: Build
+- job: Deploy
+  pool:
+    vmImage: 'ubuntu-latest'  # Use an Azure-hosted agent with SSH capabilities
   steps:
   - task: Checkout@1
     inputs:
       repository: 'self'
       clean: true
 
-  - task: NodeTool@0
-    inputs:
-      versionSpec: '16.x'
-    displayName: 'Install Node.js'
+  - script: |
+      tar -czf source-code.tar.gz .
+    displayName: 'Package source code'
 
   - script: |
-      npm install
-      npm run build
-    displayName: 'Install dependencies and build React app'
-
-  - task: Docker@2
-    inputs:
-      command: 'build'
-      Dockerfile: '**/Dockerfile'
-      tags: '$(imageName):$(imageTag)'
-      buildContext: '.'
-    displayName: 'Build Docker image'
+      scp -i $(sshKey) source-code.tar.gz $(sshUser)@$(localServer):/tmp/
+    displayName: 'Transfer source code to local server'
 
   - script: |
-      docker save $(imageName):$(imageTag) | gzip > $(Build.ArtifactStagingDirectory)/$(imageName).tar.gz
-    displayName: 'Save Docker image to file'
-
-  - publish: $(Build.ArtifactStagingDirectory)
-    artifact: docker-image
-    displayName: 'Publish Docker image artifact'
-
-- job: Deploy
-  dependsOn: Build
-  steps:
-  - download: current
-    artifact: docker-image
-    displayName: 'Download Docker image artifact'
-
-  - script: |
-      scp $(Pipeline.Workspace)/docker-image/$(imageName).tar.gz $(sshUser)@$(localServer):/tmp/
-    displayName: 'Transfer Docker image to local server'
-
-  - script: |
-      ssh $(sshUser)@$(localServer) "docker load < /tmp/$(imageName).tar.gz && docker run -d -p 80:80 $(imageName):$(imageTag)"
-    displayName: 'Deploy Docker image on local server'
+      ssh -i $(sshKey) $(sshUser)@$(localServer) << 'EOF'
+        cd /tmp
+        tar -xzf source-code.tar.gz
+        cd your-app-directory  # Replace with the directory where the Dockerfile is located
+        docker build -t $(imageName):$(imageTag) -f $(dockerfilePath) .
+        docker run -d -p 80:80 $(imageName):$(imageTag)
+      EOF
+    displayName: 'Build and deploy Docker image on local server'
