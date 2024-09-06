@@ -42,25 +42,20 @@ jobs:
           name: docker-image
 
       - name: Load Docker image
-        run: docker load -i docker-image.tar
+        run: docker load -i /home/azuser/docker-image.tar
 
       - name: Deploy to server
         env:
           SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
-          SSH_USER: ${{ secrets.SSH_USER }}
-          SERVER_IP: ${{ secrets.SERVER_IP }}
         run: |
           # Write SSH private key to file
           echo "$SSH_PRIVATE_KEY" | tr -d '\r' > ~/ssh_key
           chmod 600 ~/ssh_key
 
           # SSH to server and deploy
-          ssh -i ~/ssh_key -o StrictHostKeyChecking=no $SSH_USER@$SERVER_IP '
+          ssh -i ~/ssh_key -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SERVER_IP }} '
             # Ensure Docker is running
             sudo systemctl start docker || true
-
-            # Remove old Docker images
-            docker rmi $(docker images -q --filter "dangling=true") || true
 
             # Stop and remove existing container if it exists
             if [ "$(docker ps -q -f name=my-react-container)" ]; then
@@ -68,6 +63,15 @@ jobs:
               docker stop my-react-container
               docker rm my-react-container
             fi
+
+            # Remove old Docker images if needed
+            if [ "$(docker images -q my-react-app)" ]; then
+              echo "Removing old Docker image..."
+              docker rmi my-react-app || true
+            fi
+
+            # Load Docker image
+            docker load -i docker-image.tar
 
             # Run new Docker container
             echo "Running new Docker container..."
