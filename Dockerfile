@@ -9,7 +9,7 @@ variables:
   dockerFilePath: 'Dockerfile'
   imageTarFile: 'my-react-app.tar'
   sshKeyFile: 'ssh_key'
-  serverPath: '/path/to/save/docker-image.tar'
+  serverPath: '/home/azuser/docker-image.tar'
 
 jobs:
 - job: BuildAndDeploy
