@@ -34,7 +34,7 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: docker-image
-          path: docker-image.tar
+          path: /home/azuser/docker-image.tar
 
       - name: Deploy to server
         env:
