@@ -70,7 +70,7 @@ jobs:
 
             # Run new Docker container
             echo "Running new Docker container..."
-            docker run -d --name my-react-container -p 80:80 my-react-app || { echo "Failed to run container"; exit 1; }
+            docker run -d --name my-react-container -p 3001:80 my-react-app || { echo "Failed to run container"; exit 1; }
 
             # Check container logs
             echo "Container logs:"
