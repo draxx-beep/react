@@ -35,11 +35,11 @@ jobs:
       displayName: 'Build React app'
 
     - script: |
-        docker build -t $(dockerImageName) .
+        sudo docker build -t $(dockerImageName) .
       displayName: 'Build Docker image'
 
     - script: |
-        docker save $(dockerImageName) -o $(imageTarFile)
+        sudo docker save $(dockerImageName) -o $(imageTarFile)
       displayName: 'Save Docker image as artifact'
 
     - task: PublishPipelineArtifact@1
